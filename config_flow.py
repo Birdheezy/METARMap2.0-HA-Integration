@@ -1,75 +1,68 @@
-import logging
-import requests  # Ensure requests is imported
-from homeassistant.components.switch import SwitchEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant import config_entries
+from homeassistant.core import callback
+import voluptuous as vol
 from .const import DOMAIN
+from homeassistant.core import HomeAssistant
 
-_LOGGER = logging.getLogger(__name__)
+class METARMapConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for METAR Map LED Controller."""
 
-async def async_setup_entry(
-    hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities: AddEntitiesCallback
-):
-    """Set up the METAR Map LED Switch entity."""
-    pi_ip = hass.data[DOMAIN][config_entry.entry_id]["pi_ip"]
-    name = hass.data[DOMAIN][config_entry.entry_id]["name"]
-    async_add_entities([METARMapLEDSwitch(pi_ip, name)])
+    VERSION = 1
 
+    async def async_step_user(self, user_input=None):
+        """Handle the initial step."""
+        errors = {}
 
-class METARMapLEDSwitch(SwitchEntity):
-    """Switch to control the METAR Map LED."""
+        if user_input is not None:
+            # Validate the IP address (basic validation with protocol)
+            pi_ip = user_input.get("pi_ip", "").strip()
+            if not (pi_ip.startswith("http://") or pi_ip.startswith("https://")):
+                errors["pi_ip"] = "invalid_url"  # Add error for invalid URL
+            else:
+                # Save the data and create the config entry
+                return self.async_create_entry(
+                    title=user_input["name"],  # Use the custom name as the title
+                    data={
+                        "pi_ip": pi_ip,
+                        "name": user_input["name"],
+                    },
+                )
 
-    def __init__(self, pi_ip, name):
-        self._pi_ip = pi_ip
-        self._attr_name = f"{name} LED Switch"
-        self._attr_unique_id = f"{name.lower().replace(' ', '_')}_led_switch"
-        self._attr_is_on = False  # Default state
+        # Display the form
+        data_schema = vol.Schema(
+            {
+                vol.Required("pi_ip", default="http://"): str,
+                vol.Required("name", default="METAR Map"): str,
+            }
+        )
 
-    async def async_added_to_hass(self):
-        """Run after entity has been added to HA."""
-        await self.hass.async_add_executor_job(self.update_status)
+        return self.async_show_form(
+            step_id="user", data_schema=data_schema, errors=errors
+        )
 
-    def update_status(self):
-        """Fetch the LED status from the Raspberry Pi."""
-        url = f"{self._pi_ip}/leds/status"
-        try:
-            response = requests.get(url, verify=False, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            self._attr_is_on = data["status"] == "on"
-            _LOGGER.debug(f"LED status fetched successfully: {self._attr_is_on}")
-        except requests.RequestException as err:
-            _LOGGER.error(f"Failed to fetch LED status for {self._attr_name}: {err}")
-            self._attr_is_on = False
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        return OptionsFlowHandler(config_entry)
 
-        # Schedule an update in Home Assistant
-        self.schedule_update_ha_state()
+class OptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle options for METAR Map integration."""
 
-    async def async_update(self):
-        """Fetch the latest LED status periodically."""
-        await self.hass.async_add_executor_job(self.update_status)
+    def __init__(self, config_entry):
+        """Initialize options flow."""
+        self.config_entry = config_entry
 
-    def turn_on(self, **kwargs):
-        """Turn on the LEDs."""
-        url = f"{self._pi_ip}/leds/on"
-        try:
-            response = requests.post(url, verify=False, timeout=10)
-            response.raise_for_status()
-            self._attr_is_on = True
-            _LOGGER.debug(f"LEDs turned on successfully for {self._attr_name}")
-            self.schedule_update_ha_state()
-        except requests.RequestException as err:
-            _LOGGER.error(f"Failed to turn on LEDs for {self._attr_name}: {err}")
+    async def async_step_init(self, user_input=None):
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
 
-    def turn_off(self, **kwargs):
-        """Turn off the LEDs."""
-        url = f"{self._pi_ip}/leds/off"
-        try:
-            response = requests.post(url, verify=False, timeout=10)
-            response.raise_for_status()
-            self._attr_is_on = False
-            _LOGGER.debug(f"LEDs turned off successfully for {self._attr_name}")
-            self.schedule_update_ha_state()
-        except requests.RequestException as err:
-            _LOGGER.error(f"Failed to turn off LEDs for {self._attr_name}: {err}")
+        # Define options schema
+        options_schema = vol.Schema(
+            {
+                vol.Required("pi_ip", default=self.config_entry.data.get("pi_ip", "http://")): str,
+                vol.Required("name", default=self.config_entry.data.get("name", "METAR Map")): str,
+            }
+        )
+
+        return self.async_show_form(step_id="init", data_schema=options_schema)

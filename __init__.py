@@ -1,75 +1,38 @@
 import logging
-import requests  # Ensure requests is imported
-from homeassistant.components.switch import SwitchEntity
-from homeassistant.config_entries import ConfigEntry
+
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.typing import ConfigType
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(
-    hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities: AddEntitiesCallback
-):
-    """Set up the METAR Map LED Switch entity."""
-    pi_ip = hass.data[DOMAIN][config_entry.entry_id]["pi_ip"]
-    name = hass.data[DOMAIN][config_entry.entry_id]["name"]
-    async_add_entities([METARMapLEDSwitch(pi_ip, name)])
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up the METAR Map LED Controller from a config entry."""
+    
+    _LOGGER.info("Setting up METARMap with IP: %s", entry.data["pi_ip"])
+
+    # Store the IP address globally so other parts of the integration can access it
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
+        "pi_ip": entry.data["pi_ip"],
+        "name": entry.data["name"],
+    }
+
+    # Set up platforms (switch, button) using the config entry
+    await hass.config_entries.async_forward_entry_setups(entry, ["switch", "button"])
+
+    return True
 
 
-class METARMapLEDSwitch(SwitchEntity):
-    """Switch to control the METAR Map LED."""
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    
+    _LOGGER.info("Unloading METARMap entry with IP: %s", entry.data["pi_ip"])
 
-    def __init__(self, pi_ip, name):
-        self._pi_ip = pi_ip
-        self._attr_name = f"{name} LED Switch"
-        self._attr_unique_id = f"{name.lower().replace(' ', '_')}_led_switch"
-        self._attr_is_on = False  # Default state
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["switch", "button"])
 
-    async def async_added_to_hass(self):
-        """Run after entity has been added to HA."""
-        await self.hass.async_add_executor_job(self.update_status)
+    if unload_ok:
+        hass.data[DOMAIN].pop(entry.entry_id, None)
 
-    def update_status(self):
-        """Fetch the LED status from the Raspberry Pi."""
-        url = f"{self._pi_ip}/leds/status"
-        try:
-            response = requests.get(url, verify=False, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            self._attr_is_on = data["status"] == "on"
-            _LOGGER.debug(f"LED status fetched successfully: {self._attr_is_on}")
-        except requests.RequestException as err:
-            _LOGGER.error(f"Failed to fetch LED status for {self._attr_name}: {err}")
-            self._attr_is_on = False
-
-        # Schedule an update in Home Assistant
-        self.schedule_update_ha_state()
-
-    async def async_update(self):
-        """Fetch the latest LED status periodically."""
-        await self.hass.async_add_executor_job(self.update_status)
-
-    def turn_on(self, **kwargs):
-        """Turn on the LEDs."""
-        url = f"{self._pi_ip}/leds/on"
-        try:
-            response = requests.post(url, verify=False, timeout=10)
-            response.raise_for_status()
-            self._attr_is_on = True
-            _LOGGER.debug(f"LEDs turned on successfully for {self._attr_name}")
-            self.schedule_update_ha_state()
-        except requests.RequestException as err:
-            _LOGGER.error(f"Failed to turn on LEDs for {self._attr_name}: {err}")
-
-    def turn_off(self, **kwargs):
-        """Turn off the LEDs."""
-        url = f"{self._pi_ip}/leds/off"
-        try:
-            response = requests.post(url, verify=False, timeout=10)
-            response.raise_for_status()
-            self._attr_is_on = False
-            _LOGGER.debug(f"LEDs turned off successfully for {self._attr_name}")
-            self.schedule_update_ha_state()
-        except requests.RequestException as err:
-            _LOGGER.error(f"Failed to turn off LEDs for {self._attr_name}: {err}")
+    return unload_ok
