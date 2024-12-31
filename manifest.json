@@ -3,7 +3,7 @@
     "name": "METAR Map Controller",
     "documentation": "https://github.com/Birdheezy/METARMap2.0",
     "version": "1.0",
-    "requirements": [],
+    "requirements": ["aiohttp"],
     "dependencies": [],
     "codeowners": ["@birdheezy"],
     "config_flow": true,
