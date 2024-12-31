@@ -4,7 +4,12 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from .const import DOMAIN
+from .const import (
+    DOMAIN,
+    ENDPOINT_LEDS_ON,
+    ENDPOINT_LEDS_OFF,
+    ENDPOINT_LED_STATUS,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +37,7 @@ class METARMapLEDSwitch(SwitchEntity):
 
     def update_status(self):
         """Fetch the LED status from the Raspberry Pi."""
-        url = f"{self._pi_ip}/leds/status"
+        url = f"{self._pi_ip}{ENDPOINT_LED_STATUS}"
         try:
             response = requests.get(url, verify=False, timeout=10)
             response.raise_for_status()
@@ -52,7 +57,7 @@ class METARMapLEDSwitch(SwitchEntity):
 
     def turn_on(self, **kwargs):
         """Turn on the LEDs."""
-        url = f"{self._pi_ip}/leds/on"
+        url = f"{self._pi_ip}{ENDPOINT_LEDS_ON}"
         try:
             response = requests.post(url, verify=False, timeout=10)
             response.raise_for_status()
@@ -64,7 +69,7 @@ class METARMapLEDSwitch(SwitchEntity):
 
     def turn_off(self, **kwargs):
         """Turn off the LEDs."""
-        url = f"{self._pi_ip}/leds/off"
+        url = f"{self._pi_ip}{ENDPOINT_LEDS_OFF}"
         try:
             response = requests.post(url, verify=False, timeout=10)
             response.raise_for_status()

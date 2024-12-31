@@ -1,5 +1,5 @@
 import logging
-import requests  # Ensure requests is imported
+import requests
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -20,9 +20,11 @@ class METARMapWeatherButton(ButtonEntity):
     """Button to trigger a weather update on the METAR Map."""
 
     def __init__(self, pi_ip, name):
+        """Initialize the button."""
         self._pi_ip = pi_ip
         self._attr_name = f"{name} Weather Update"
         self._attr_unique_id = f"{name.lower().replace(' ', '_')}_weather_update"
+        self._attr_device_class = "update"  # Add device class for better UI representation
 
     def press(self):
         """Trigger a weather update by sending a POST request to the Raspberry Pi."""

@@ -19,8 +19,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "name": entry.data["name"],
     }
 
-    # Set up platforms (switch, button) using the config entry
-    await hass.config_entries.async_forward_entry_setups(entry, ["switch", "button"])
+    # Set up platforms (switch, button, sensor) using the config entry
+    await hass.config_entries.async_forward_entry_setups(
+        entry, ["switch", "button", "sensor"]
+    )
 
     return True
 
@@ -30,7 +32,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     _LOGGER.info("Unloading METARMap entry with IP: %s", entry.data["pi_ip"])
 
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["switch", "button"])
+    unload_ok = await hass.config_entries.async_unload_platforms(
+        entry, ["switch", "button", "sensor"]
+    )
 
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)

@@ -5,22 +5,30 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from .const import DOMAIN
 
-DOMAIN = "metarmap"
 _LOGGER = logging.getLogger(__name__)
-
-# URLs for the REST API on the Raspberry Pi
-LED_ON_URL = "http://192.168.70.167/leds/on"
-LED_OFF_URL = "http://192.168.70.167/leds/off"
-WEATHER_UPDATE_URL = "http://192.168.70.167/update-weather"
 
 def setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the METAR Map LED Controller with services only."""
+    
+    # Get the pi_ip from the first config entry (if any exist)
+    entries = hass.config_entries.async_entries(DOMAIN)
+    if not entries:
+        _LOGGER.error("No config entries found for METAR Map")
+        return False
+        
+    pi_ip = entries[0].data["pi_ip"]
+    
+    # Define URLs using the pi_ip
+    led_on_url = f"{pi_ip}/leds/on"
+    led_off_url = f"{pi_ip}/leds/off"
+    weather_update_url = f"{pi_ip}/update-weather"
 
     def handle_turn_on(call):
         """Handle turning on the LEDs."""
         try:
-            requests.post(LED_ON_URL)
+            requests.post(led_on_url)
             _LOGGER.info("METAR Map LEDs turned on successfully")
         except requests.RequestException as err:
             _LOGGER.error(f"Failed to turn on LEDs: {err}")
@@ -28,7 +36,7 @@ def setup(hass: HomeAssistant, config: dict) -> bool:
     def handle_turn_off(call):
         """Handle turning off the LEDs."""
         try:
-            requests.post(LED_OFF_URL)
+            requests.post(led_off_url)
             _LOGGER.info("METAR Map LEDs turned off successfully")
         except requests.RequestException as err:
             _LOGGER.error(f"Failed to turn off LEDs: {err}")
@@ -36,7 +44,7 @@ def setup(hass: HomeAssistant, config: dict) -> bool:
     def handle_update_weather(call):
         """Handle updating the weather."""
         try:
-            requests.post(WEATHER_UPDATE_URL)
+            requests.post(weather_update_url)
             _LOGGER.info("Weather updated successfully")
         except requests.RequestException as err:
             _LOGGER.error(f"Failed to update weather: {err}")
