@@ -1,7 +1,7 @@
 {
     "domain": "metarmap",
     "name": "METAR Map Controller",
-    "documentation": "https://github.com/Birdheezy/METARMap2.0",
+    "documentation": "https://github.com/Birdheezy/METARMap2.0-HA-Integration/tree/main",
     "version": "1.0",
     "requirements": ["aiohttp"],
     "dependencies": [],
