@@ -28,8 +28,8 @@ Enter your controller's local IP address. If you enabled HTTPS, be sure to use H
 
 ### Step Seven
 3 entities are now available:
-A button to force update weather
-A switch to turn the LEDs on/off
+A button to force update weather. 
+A switch to turn the LEDs on/off. 
 A sensor that outputs the last time the weather has been updated. 
 
 You can use the built in lights on/off control and weather update function in the settings website,
