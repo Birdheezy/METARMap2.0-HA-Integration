@@ -46,7 +46,7 @@ Open a file editor in Home Assistant
 Navigate to the "custom_compoents" folder and create a new folder called "metarmap"
 
 ### Step 3
-Copy over the files.
+Copy over the files from the custom_components/metarmap folder into your newly created metarmap folder.
 
 ### Step 4
 Restart Home Assistant. 
