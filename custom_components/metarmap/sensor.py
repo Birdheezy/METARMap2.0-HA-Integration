@@ -61,7 +61,7 @@ class METARMapWeatherUpdateSensor(SensorEntity):
                     # Parse the timestamp and add the system timezone
                     naive_dt = datetime.datetime.strptime(
                         timestamp_str, 
-                        '%Y-%m-%d %H:%M:%S'
+                        '%m-%d-%Y %H:%M:%S'
                     )
                     # Add the timezone from Home Assistant's configuration
                     self._attr_native_value = naive_dt.replace(
