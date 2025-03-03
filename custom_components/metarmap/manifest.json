@@ -2,7 +2,7 @@
     "domain": "metarmap",
     "name": "METAR Map Controller",
     "documentation": "https://github.com/Birdheezy/METARMap2.0-HA-Integration/tree/main",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "requirements": ["aiohttp"],
     "dependencies": [],
     "codeowners": ["@birdheezy"],
